@@ -15,6 +15,7 @@ A production-grade demo application for teaching AWS cloud services hands-on. St
 | **Static Hosting** (`terraform/main.tf`) | S3 + CloudFront + WAF + ACM + Route 53 + API GW + Lambda |
 | **ALB Module** (`terraform/alb/`) | Application Load Balancer with Lambda target group |
 | **EC2 Lab** (`terraform/ec2/`) | EC2 + ALB + Route 53 hands-on (load balancing, DNS mapping) |
+| **Teaching Guides** (`docs/`) | 5 detailed guides: teaching plan, manual labs, Route 53, ALB, walkthrough |
 
 ### App Features
 - 🔍 **Interactive DNS Simulator** — 10 `dig`-style scenarios showing how DNS resolution works
@@ -298,6 +299,13 @@ streamflix-app/
 │   ├── app.js                    # DNS simulator, API demo, EC2 banner
 │   └── error.html                # Custom 404/403 error page
 │
+├── docs/                         # Teaching Guides & Lab Manuals
+│   ├── 01-aws-teaching-plan.md   # 2-day workshop plan, teaching scripts, analogies
+│   ├── 02-manual-lab-guide.md    # Step-by-step AWS Console lab (S3+CF+WAF+ACM+R53+APIGW+Lambda)
+│   ├── 03-route53-alb-guide.md   # Route 53 deep dive + ALB comparison + interview Qs
+│   ├── 04-ec2-alb-lab-guide.md   # EC2 + ALB + Route 53 load balancing lab
+│   └── WALKTHROUGH.md            # Dev changelog — what was built and why
+│
 └── terraform/                    # Infrastructure as Code
     ├── main.tf                   # Lab 1: S3 + CloudFront + WAF + ACM + Route53 + API GW + Lambda
     ├── variables.tf              # Input variables
@@ -316,6 +324,18 @@ streamflix-app/
         ├── user_data.sh          # EC2 bootstrap (nginx + metadata)
         └── deploy_to_ec2.sh      # SCP app files to instances
 ```
+
+---
+
+## 📖 Teaching Guides (in `docs/`)
+
+| # | Guide | What's Inside |
+|---|-------|---------------|
+| 01 | [AWS Teaching Plan](docs/01-aws-teaching-plan.md) | Complete 2-day workshop plan with teaching scripts, real-world analogies, WAF attack demos, interview questions, resume project ideas |
+| 02 | [Manual Console Lab](docs/02-manual-lab-guide.md) | Step-by-step AWS Console walkthrough: S3 → ACM → CloudFront (OAC) → WAF → Route 53 → API Gateway → Lambda — no Terraform needed |
+| 03 | [Route 53 & ALB Guide](docs/03-route53-alb-guide.md) | Deep dive on all DNS record types, CNAME vs ALIAS comparison table, all 8 routing policies explained, ALB vs NLB vs CLB comparison |
+| 04 | [EC2 + ALB Lab](docs/04-ec2-alb-lab-guide.md) | Hands-on lab: Launch EC2, create AMI, deploy second instance, create ALB, map Route 53 A/ALIAS/CNAME records, demonstrate load balancing + health check failover |
+| — | [Walkthrough](docs/WALKTHROUGH.md) | Development changelog: what was rewritten, all infrastructure modules, final file structure |
 
 ---
 
