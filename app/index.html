@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamFlix — AWS Cloud Demo</title>
+    <meta name="description" content="A production-grade demo application showcasing AWS S3, CloudFront, WAF, Route53, ACM, API Gateway, and Lambda.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Inline SVG favicon so we don't need an external file -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+</head>
+<body>
+    <!-- ===== Animated background particles ===== -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- ===== Navigation ===== -->
+    <nav id="navbar">
+        <div class="nav-inner">
+            <a href="#" class="logo" id="logoLink">
+                <span class="logo-icon">▶</span> StreamFlix
+            </a>
+            <ul class="nav-links">
+                <li><a href="#architecture" class="nav-link">Architecture</a></li>
+                <li><a href="#services" class="nav-link">Services</a></li>
+                <li><a href="#route53-deep-dive" class="nav-link">Route 53</a></li>
+                <li><a href="#api-demo" class="nav-link">API Demo</a></li>
+                <li><a href="#waf-demo" class="nav-link">WAF Demo</a></li>
+            </ul>
+            <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ===== EC2 Instance Info Banner (visible only on EC2) ===== -->
+    <div id="ec2Banner" class="ec2-banner" style="display:none;">
+        <div class="ec2-banner-inner">
+            <span class="ec2-label">🖥️ Served by EC2</span>
+            <span class="ec2-info" id="ec2InstanceId">—</span>
+            <span class="ec2-divider">|</span>
+            <span class="ec2-info" id="ec2Az">—</span>
+            <span class="ec2-divider">|</span>
+            <span class="ec2-info" id="ec2PrivateIp">—</span>
+            <span class="ec2-divider">|</span>
+            <span class="ec2-info" id="ec2AmiId">—</span>
+        </div>
+    </div>
+
+    <!-- ===== Hero Section ===== -->
+    <header id="hero" class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">🚀 Powered by 8 AWS Services</div>
+            <h1>Global Content Delivery.<br><span class="gradient-text">Edge Security.</span></h1>
+            <p class="hero-subtitle">
+                This application is hosted on <strong>S3</strong>, delivered globally via <strong>CloudFront CDN</strong>,
+                protected by <strong>AWS WAF</strong>, secured with <strong>ACM SSL</strong>, routed through
+                <strong>Route 53 DNS</strong>, load-balanced by <strong>ALB</strong>, and backed by <strong>API Gateway + Lambda</strong>.
+            </p>
+            <div class="hero-actions">
+                <a href="#api-demo" class="btn btn-primary" id="heroCtaBtn">
+                    <span class="btn-icon">⚡</span> Test Live API
+                </a>
+                <a href="#architecture" class="btn btn-outline" id="heroArchBtn">
+                    <span class="btn-icon">🏗️</span> View Architecture
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number" data-target="450">0</span>+
+                    <span class="stat-label">Edge Locations</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" data-target="10">0</span>ms
+                    <span class="stat-label">Avg Latency</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" data-target="99">0</span>.99%
+                    <span class="stat-label">Uptime SLA</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== Architecture Section ===== -->
+    <section id="architecture" class="section">
+        <div class="section-inner">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">Follow the request from a user's browser to the backend and back</p>
+
+            <div class="architecture-flow">
+                <div class="arch-step" data-step="1">
+                    <div class="arch-icon">🌐</div>
+                    <h3>User types URL</h3>
+                    <p><strong>Route 53</strong> resolves <code>streamflix.com</code> → nearest CloudFront edge IP</p>
+                </div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-step" data-step="2">
+                    <div class="arch-icon">🛡️</div>
+                    <h3>WAF Inspection</h3>
+                    <p><strong>AWS WAF</strong> checks for SQL injection, XSS, rate limits, and geo-blocks</p>
+                </div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-step" data-step="3">
+                    <div class="arch-icon">🔒</div>
+                    <h3>TLS Handshake</h3>
+                    <p><strong>ACM Certificate</strong> establishes encrypted HTTPS connection</p>
+                </div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-step" data-step="4">
+                    <div class="arch-icon">⚡</div>
+                    <h3>Edge Cache</h3>
+                    <p><strong>CloudFront</strong> serves from cache or fetches from <strong>S3</strong> origin via OAC</p>
+                </div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-step" data-step="5">
+                    <div class="arch-icon">🔗</div>
+                    <h3>API Request</h3>
+                    <p><strong>API Gateway</strong> routes dynamic requests to <strong>Lambda</strong> functions</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Services Grid ===== -->
+    <section id="services" class="section section-dark">
+        <div class="section-inner">
+            <h2 class="section-title">AWS Services In This Stack</h2>
+            <p class="section-subtitle">Click any card to learn more about that service</p>
+
+            <div class="services-grid">
+                <div class="service-card" id="card-s3" tabindex="0">
+                    <div class="card-glow"></div>
+                    <div class="card-icon">🪣</div>
+                    <h3>Amazon S3</h3>
+                    <p class="card-role">Static File Storage</p>
+                    <ul class="card-details">
+                        <li>Stores <code>index.html</code>, <code>styles.css</code>, <code>app.js</code></li>
+                        <li>All public access <strong>blocked</strong> (zero-trust)</li>
+                        <li>Only CloudFront can read via OAC</li>
+                        <li>99.999999999% (11 nines) durability</li>
+                    </ul>
+                </div>
+
+                <div class="service-card" id="card-cloudfront" tabindex="0">
+                    <div class="card-glow"></div>
+                    <div class="card-icon">🌐</div>
+                    <h3>CloudFront CDN</h3>
+                    <p class="card-role">Global Content Delivery</p>
+                    <ul class="card-details">
+                        <li>450+ Points of Presence worldwide</li>
+                        <li>Origin Access Control (OAC) to S3</li>
+                        <li>HTTP → HTTPS redirect enforced</li>
+                        <li>Cache invalidation on redeploy</li>
+                    </ul>
+                </div>
+
+                <div class="service-card" id="card-waf" tabindex="0">
+                    <div class="card-glow"></div>
+                    <div class="card-icon">🛡️</div>
+                    <h3>AWS WAF</h3>
+                    <p class="card-role">Edge Firewall</p>
+                    <ul class="card-details">
+                        <li>Rate limiting (100 req / 5 min)</li>
+                        <li>SQL Injection protection</li>
+                        <li>Cross-Site Scripting (XSS) blocking</li>
+                        <li>Geo-restriction capable</li>
+                    </ul>
+                </div>
+
+                <div class="service-card" id="card-route53" tabindex="0">
+                    <div class="card-glow"></div>
+                    <div class="card-icon">📡</div>
+                    <h3>Route 53</h3>
+                    <p class="card-role">DNS Management</p>
+                    <ul class="card-details">
+                        <li>Alias A-Record → CloudFront (free!)</li>
+                        <li>CNAME for ACM DNS validation</li>
+                        <li>Health checks & failover routing</li>
+                        <li>100% uptime SLA</li>
+                    </ul>
+                </div>
+
+                <div class="service-card" id="card-acm" tabindex="0">
+                    <div class="card-glow"></div>
+                    <div class="card-icon">🔐</div>
+                    <h3>ACM Certificate</h3>
+                    <p class="card-role">SSL/TLS Encryption</p>
+                    <ul class="card-details">
+                        <li>Free public SSL certificate</li>
+                        <li>Must be in <code>us-east-1</code> for CloudFront</li>
+                        <li>Auto-renews before expiry</li>
+                        <li>Wildcard support (<code>*.domain.com</code>)</li>
+                    </ul>
+                </div>
+
+                <div class="service-card" id="card-apigw" tabindex="0">
+                    <div class="card-glow"></div>
+                    <div class="card-icon">🔗</div>
+                    <h3>API Gateway</h3>
+                    <p class="card-role">Backend Router</p>
+                    <ul class="card-details">
+                        <li>HTTP API (low-cost, low-latency)</li>
+                        <li>Routes <code>GET /hello</code> → Lambda</li>
+                        <li>Built-in CORS configuration</li>
+                        <li>Auto-deploy to <code>prod</code> stage</li>
+                    </ul>
+                </div>
+
+                <div class="service-card" id="card-alb" tabindex="0">
+                    <div class="card-glow"></div>
+                    <div class="card-icon">⚖️</div>
+                    <h3>Application Load Balancer</h3>
+                    <p class="card-role">Layer 7 Load Balancing</p>
+                    <ul class="card-details">
+                        <li>Distributes traffic across targets (EC2, Lambda, IP)</li>
+                        <li>Path-based routing (<code>/api/*</code>, <code>/images/*</code>)</li>
+                        <li>Health checks on backend targets</li>
+                        <li>Route 53 Alias record → ALB DNS name</li>
+                    </ul>
+                </div>
+
+                <div class="service-card" id="card-lambda" tabindex="0">
+                    <div class="card-glow"></div>
+                    <div class="card-icon">λ</div>
+                    <h3>AWS Lambda</h3>
+                    <p class="card-role">Serverless Compute</p>
+                    <ul class="card-details">
+                        <li>Runs code without managing servers</li>
+                        <li>Pay only for compute time used</li>
+                        <li>Triggered by API Gateway or ALB</li>
+                        <li>Auto-scales from 0 to thousands</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== API Demo Section ===== -->
+    <section id="api-demo" class="section">
+        <div class="section-inner">
+            <h2 class="section-title">Live API Gateway Demo</h2>
+            <p class="section-subtitle">Click the button to make a real <code>GET</code> request to your AWS Lambda backend through API Gateway</p>
+
+            <div class="demo-panel">
+                <div class="demo-controls">
+                    <button id="testApiBtn" class="btn btn-primary btn-large">
+                        <span class="btn-icon">⚡</span> Send GET /hello
+                    </button>
+                </div>
+
+                <div class="terminal" id="apiTerminal">
+                    <div class="terminal-header">
+                        <span class="terminal-dot red"></span>
+                        <span class="terminal-dot yellow"></span>
+                        <span class="terminal-dot green"></span>
+                        <span class="terminal-title">API Response</span>
+                    </div>
+                    <div class="terminal-body" id="terminalBody">
+                        <p class="terminal-line dim">$ Waiting for request...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== WAF Demo Section ===== -->
+    <section id="waf-demo" class="section section-dark">
+        <div class="section-inner">
+            <h2 class="section-title">WAF Attack Simulation</h2>
+            <p class="section-subtitle">See how AWS WAF protects your application from common attacks</p>
+
+            <div class="waf-grid">
+                <div class="waf-card" id="wafSqli">
+                    <div class="waf-card-header">
+                        <span class="waf-badge danger">SQL Injection</span>
+                    </div>
+                    <p>Simulates: <code>?id=1' OR '1'='1</code></p>
+                    <button class="btn btn-danger btn-small" data-attack="sqli" id="wafSqliBtn">
+                        🧨 Simulate SQLi
+                    </button>
+                    <div class="waf-result" id="wafSqliResult"></div>
+                </div>
+
+                <div class="waf-card" id="wafXss">
+                    <div class="waf-card-header">
+                        <span class="waf-badge danger">Cross-Site Scripting</span>
+                    </div>
+                    <p>Simulates: <code>&lt;script&gt;alert('xss')&lt;/script&gt;</code></p>
+                    <button class="btn btn-danger btn-small" data-attack="xss" id="wafXssBtn">
+                        🧨 Simulate XSS
+                    </button>
+                    <div class="waf-result" id="wafXssResult"></div>
+                </div>
+
+                <div class="waf-card" id="wafRateLimit">
+                    <div class="waf-card-header">
+                        <span class="waf-badge warning">Rate Limiting</span>
+                    </div>
+                    <p>Simulates: 50 rapid requests in 3 seconds</p>
+                    <button class="btn btn-warning btn-small" data-attack="ratelimit" id="wafRateLimitBtn">
+                        🧨 Simulate Flood
+                    </button>
+                    <div class="waf-result" id="wafRateLimitResult"></div>
+                    <div class="rate-progress" id="rateProgress">
+                        <div class="rate-bar" id="rateBar"></div>
+                    </div>
+                </div>
+
+                <div class="waf-card" id="wafGeo">
+                    <div class="waf-card-header">
+                        <span class="waf-badge info">Geo-Blocking</span>
+                    </div>
+                    <p>Simulates: Request from a blocked country</p>
+                    <button class="btn btn-info btn-small" data-attack="geo" id="wafGeoBtn">
+                        🌍 Simulate Geo-Block
+                    </button>
+                    <div class="waf-result" id="wafGeoResult"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Route 53 Deep Dive Section ===== -->
+    <section id="route53-deep-dive" class="section">
+        <div class="section-inner">
+            <h2 class="section-title">📡 Route 53 Deep Dive</h2>
+            <p class="section-subtitle">Understanding DNS record types, IP ↔ DNS mapping, and routing policies</p>
+
+            <!-- IP to DNS vs DNS to DNS -->
+            <div class="r53-mapping-demo">
+                <h3 class="subsection-title">Record Types: IP → DNS vs DNS → DNS</h3>
+                <div class="mapping-grid">
+                    <div class="mapping-card" id="mappingARecord">
+                        <div class="mapping-header">
+                            <span class="mapping-type a-record">A Record</span>
+                            <span class="mapping-direction">Domain → IP Address</span>
+                        </div>
+                        <div class="mapping-visual">
+                            <div class="mapping-box source">streamflix.com</div>
+                            <div class="mapping-arrow">→</div>
+                            <div class="mapping-box target ip">54.230.10.42</div>
+                        </div>
+                        <p class="mapping-explain">Maps a domain name directly to an IPv4 address. Used when you know the exact IP of your server (e.g., an EC2 instance with an Elastic IP).</p>
+                        <div class="mapping-example">
+                            <code>streamflix.com → A → 54.230.10.42</code>
+                        </div>
+                    </div>
+
+                    <div class="mapping-card" id="mappingAAAA">
+                        <div class="mapping-header">
+                            <span class="mapping-type aaaa-record">AAAA Record</span>
+                            <span class="mapping-direction">Domain → IPv6 Address</span>
+                        </div>
+                        <div class="mapping-visual">
+                            <div class="mapping-box source">streamflix.com</div>
+                            <div class="mapping-arrow">→</div>
+                            <div class="mapping-box target ip">2600:1f18:...:8a</div>
+                        </div>
+                        <p class="mapping-explain">Same as A record but for IPv6 addresses. Modern infrastructure increasingly uses IPv6.</p>
+                        <div class="mapping-example">
+                            <code>streamflix.com → AAAA → 2600:1f18:2551:8a00::1</code>
+                        </div>
+                    </div>
+
+                    <div class="mapping-card" id="mappingCNAME">
+                        <div class="mapping-header">
+                            <span class="mapping-type cname-record">CNAME Record</span>
+                            <span class="mapping-direction">DNS Name → DNS Name</span>
+                        </div>
+                        <div class="mapping-visual">
+                            <div class="mapping-box source">www.streamflix.com</div>
+                            <div class="mapping-arrow">→</div>
+                            <div class="mapping-box target dns">streamflix.com</div>
+                        </div>
+                        <p class="mapping-explain">Maps one domain name to another. <strong>Cannot be used at the zone apex</strong> (root domain like <code>streamflix.com</code>). Use for subdomains only!</p>
+                        <div class="mapping-example">
+                            <code>www.streamflix.com → CNAME → streamflix.com</code>
+                        </div>
+                        <div class="mapping-warning">⚠️ CNAME replaces ALL records at that name. Cannot coexist with other types.</div>
+                    </div>
+
+                    <div class="mapping-card" id="mappingAlias">
+                        <div class="mapping-header">
+                            <span class="mapping-type alias-record">ALIAS Record ⭐</span>
+                            <span class="mapping-direction">DNS → AWS Resource (Free!)</span>
+                        </div>
+                        <div class="mapping-visual">
+                            <div class="mapping-box source">streamflix.com</div>
+                            <div class="mapping-arrow">→</div>
+                            <div class="mapping-box target aws">d3abc.cloudfront.net</div>
+                        </div>
+                        <p class="mapping-explain">AWS-specific! Works at the zone apex. Points to AWS resources (CloudFront, ALB, S3, etc.). <strong>Free of charge</strong> — no Route 53 query fees. This is the preferred way!</p>
+                        <div class="mapping-example">
+                            <code>streamflix.com → ALIAS (A) → d3abc.cloudfront.net</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Record Types -->
+            <div class="r53-other-records">
+                <h3 class="subsection-title">Other Important Record Types</h3>
+                <div class="record-types-grid">
+                    <div class="record-type-card">
+                        <span class="rt-badge">MX</span>
+                        <div class="rt-content">
+                            <h4>Mail Exchange</h4>
+                            <p>Routes email to mail servers</p>
+                            <code>streamflix.com → MX 10 → mail.google.com</code>
+                        </div>
+                    </div>
+                    <div class="record-type-card">
+                        <span class="rt-badge">TXT</span>
+                        <div class="rt-content">
+                            <h4>Text Record</h4>
+                            <p>Domain verification, SPF, DKIM for email</p>
+                            <code>streamflix.com → TXT → "v=spf1 include:_spf.google.com"</code>
+                        </div>
+                    </div>
+                    <div class="record-type-card">
+                        <span class="rt-badge">NS</span>
+                        <div class="rt-content">
+                            <h4>Name Server</h4>
+                            <p>Delegates a hosted zone to specific DNS servers</p>
+                            <code>streamflix.com → NS → ns-1234.awsdns-12.org</code>
+                        </div>
+                    </div>
+                    <div class="record-type-card">
+                        <span class="rt-badge">SOA</span>
+                        <div class="rt-content">
+                            <h4>Start of Authority</h4>
+                            <p>Zone metadata: primary NS, admin email, serial number</p>
+                            <code>Auto-created with every hosted zone</code>
+                        </div>
+                    </div>
+                    <div class="record-type-card">
+                        <span class="rt-badge">CAA</span>
+                        <div class="rt-content">
+                            <h4>Certificate Authority Auth</h4>
+                            <p>Controls which CAs can issue SSL certs for your domain</p>
+                            <code>streamflix.com → CAA → 0 issue "amazon.com"</code>
+                        </div>
+                    </div>
+                    <div class="record-type-card">
+                        <span class="rt-badge">SRV</span>
+                        <div class="rt-content">
+                            <h4>Service Locator</h4>
+                            <p>Specifies host/port for services (SIP, LDAP, etc.)</p>
+                            <code>_sip._tcp.streamflix.com → SRV → 10 5 5060 sip.example.com</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Routing Policies -->
+            <div class="r53-routing-policies">
+                <h3 class="subsection-title">Routing Policies — How Route 53 Decides Where to Send Traffic</h3>
+                <div class="routing-grid">
+
+                    <div class="routing-card-rich" id="routeSimple">
+                        <div class="rr-header">
+                            <span class="rr-badge simple">Simple</span>
+                            <span class="rr-tagline">Default · No Intelligence</span>
+                        </div>
+                        <p class="rr-description">The most basic routing. Maps a domain name to one or more resources. If you specify multiple IPs, Route 53 returns them all — the client picks one randomly. <strong>No health checks.</strong></p>
+                        <div class="rr-visual">
+                            <div class="rr-flow-label">Traffic Flow</div>
+                            <div class="routing-visual">
+                                <div class="rv-user">User</div>
+                                <div class="rv-arrow">→</div>
+                                <div class="rv-target active">Server A</div>
+                            </div>
+                        </div>
+                        <div class="rr-details-grid">
+                            <div class="rr-detail">
+                                <h5>📋 How It Works</h5>
+                                <ol>
+                                    <li>User queries <code>streamflix.com</code></li>
+                                    <li>Route 53 returns the IP(s) you configured</li>
+                                    <li>If multiple IPs → client picks randomly</li>
+                                </ol>
+                            </div>
+                            <div class="rr-detail">
+                                <h5>🏢 Real-World Example</h5>
+                                <p>A small company blog hosted on a single EC2 instance with an Elastic IP. No need for complex routing.</p>
+                            </div>
+                        </div>
+                        <div class="rr-config">
+                            <h5>⚙️ AWS Console Config</h5>
+                            <code>Record name: streamflix.com | Type: A | Value: 54.230.10.42 | Routing policy: Simple</code>
+                        </div>
+                        <div class="rr-warning">⚠️ No health checks! If the server dies, DNS still points to it.</div>
+                    </div>
+
+                    <div class="routing-card-rich" id="routeWeighted">
+                        <div class="rr-header">
+                            <span class="rr-badge weighted">Weighted</span>
+                            <span class="rr-tagline">Traffic Splitting · A/B Testing</span>
+                        </div>
+                        <p class="rr-description">Distributes traffic based on <strong>weights you assign</strong>. Route 53 calculates the percentage as: <code>weight / total_weight</code>. Setting a weight to <code>0</code> stops all traffic to that record.</p>
+                        <div class="rr-visual">
+                            <div class="rr-flow-label">Traffic Flow (70/30 Split)</div>
+                            <div class="routing-visual">
+                                <div class="rv-user">User</div>
+                                <div class="rv-arrow">→</div>
+                                <div class="rv-split">
+                                    <div class="rv-target active">v2.0 (new) <span class="rv-weight">70%</span></div>
+                                    <div class="rv-target">v1.0 (old) <span class="rv-weight">30%</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rr-details-grid">
+                            <div class="rr-detail">
+                                <h5>📋 How It Works</h5>
+                                <ol>
+                                    <li>Create <strong>2+ records</strong> with the same name</li>
+                                    <li>Assign weights: v2 = 70, v1 = 30</li>
+                                    <li>70% of queries → v2, 30% → v1</li>
+                                    <li>Set v1 weight = 0 to finish migration</li>
+                                </ol>
+                            </div>
+                            <div class="rr-detail">
+                                <h5>🏢 Real-World Example</h5>
+                                <p><strong>Canary deployment:</strong> Netflix deploys a new version to 5% of users. If no errors after 1 hour, increase to 50%, then 100%.</p>
+                            </div>
+                        </div>
+                        <div class="rr-config">
+                            <h5>⚙️ AWS Console Config</h5>
+                            <code>Record 1: A | Value: 10.0.1.10 | Weight: 70 | Set ID: "v2-prod"</code><br>
+                            <code>Record 2: A | Value: 10.0.2.20 | Weight: 30 | Set ID: "v1-prod"</code>
+                        </div>
+                        <div class="rr-tip">💡 Supports health checks. If a weighted target fails, Route 53 removes it from rotation automatically.</div>
+                    </div>
+
+                    <div class="routing-card-rich" id="routeLatency">
+                        <div class="rr-header">
+                            <span class="rr-badge latency">Latency</span>
+                            <span class="rr-tagline">Fastest Region · Global Performance</span>
+                        </div>
+                        <p class="rr-description">Routes each user to the <strong>AWS region with the lowest network latency</strong> to them. AWS maintains a global latency database — it's not measured live per request.</p>
+                        <div class="rr-visual">
+                            <div class="rr-flow-label">User in Mumbai → Nearest Region</div>
+                            <div class="routing-visual">
+                                <div class="rv-user">India 🇮🇳</div>
+                                <div class="rv-arrow">→</div>
+                                <div class="rv-split">
+                                    <div class="rv-target active">Mumbai <span class="rv-weight">12ms ✓</span></div>
+                                    <div class="rv-target dimmed">Virginia <span class="rv-weight">210ms</span></div>
+                                    <div class="rv-target dimmed">Ireland <span class="rv-weight">180ms</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rr-details-grid">
+                            <div class="rr-detail">
+                                <h5>📋 How It Works</h5>
+                                <ol>
+                                    <li>Deploy app in multiple AWS regions</li>
+                                    <li>Create latency records for each region</li>
+                                    <li>User's DNS resolver asks Route 53</li>
+                                    <li>Route 53 checks latency table → picks lowest</li>
+                                </ol>
+                            </div>
+                            <div class="rr-detail">
+                                <h5>🏢 Real-World Example</h5>
+                                <p><strong>Amazon.com</strong> uses this! Users in India get routed to <code>ap-south-1</code> (Mumbai), US users to <code>us-east-1</code>. Reduces page load time by 200ms+.</p>
+                            </div>
+                        </div>
+                        <div class="rr-config">
+                            <h5>⚙️ AWS Console Config</h5>
+                            <code>Record 1: A | Value: 13.235.x.x | Region: ap-south-1 | Set ID: "mumbai"</code><br>
+                            <code>Record 2: A | Value: 54.230.x.x | Region: us-east-1 | Set ID: "virginia"</code>
+                        </div>
+                        <div class="rr-compare">🔍 <strong>vs Geolocation:</strong> Latency = which server <em>responds fastest</em>. Geolocation = where the user <em>physically is</em>. A user in India might get fastest response from Singapore, not Mumbai.</div>
+                    </div>
+
+                    <div class="routing-card-rich" id="routeFailover">
+                        <div class="rr-header">
+                            <span class="rr-badge failover">Failover</span>
+                            <span class="rr-tagline">Disaster Recovery · Active-Passive</span>
+                        </div>
+                        <p class="rr-description">Creates an <strong>active-passive</strong> pair. Route 53 health-checks the primary. If the primary fails 3 times in a row, traffic <strong>automatically</strong> switches to the secondary. No manual intervention.</p>
+                        <div class="rr-visual">
+                            <div class="rr-flow-label">Primary fails → Auto-switch to standby</div>
+                            <div class="routing-visual">
+                                <div class="rv-user">User</div>
+                                <div class="rv-arrow">→</div>
+                                <div class="rv-split">
+                                    <div class="rv-target error">Primary (us-east-1) ❌</div>
+                                    <div class="rv-target active">Standby (eu-west-1) ✅</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rr-details-grid">
+                            <div class="rr-detail">
+                                <h5>📋 How It Works</h5>
+                                <ol>
+                                    <li>Create a <strong>health check</strong> for primary endpoint</li>
+                                    <li>Primary record → Failover type = <code>PRIMARY</code></li>
+                                    <li>Secondary record → Failover type = <code>SECONDARY</code></li>
+                                    <li>Health check fails 3x → Route 53 switches to secondary</li>
+                                    <li>Primary recovers → Route 53 switches back</li>
+                                </ol>
+                            </div>
+                            <div class="rr-detail">
+                                <h5>🏢 Real-World Example</h5>
+                                <p><strong>Banking website:</strong> Primary in <code>us-east-1</code>, standby in <code>eu-west-1</code>. If Virginia goes down (like the 2017 S3 outage), customers automatically hit Ireland. Zero downtime.</p>
+                            </div>
+                        </div>
+                        <div class="rr-config">
+                            <h5>⚙️ AWS Console Config</h5>
+                            <code>Record 1: A | Value: ALB-Primary | Failover: Primary | Health Check: hc-xyz</code><br>
+                            <code>Record 2: A | Value: ALB-Standby | Failover: Secondary</code>
+                        </div>
+                        <div class="rr-tip">💡 The secondary can be a static S3 website showing "We're experiencing issues, please wait" — this is a common pattern!</div>
+                    </div>
+
+                    <div class="routing-card-rich" id="routeGeolocation">
+                        <div class="rr-header">
+                            <span class="rr-badge geolocation">Geolocation</span>
+                            <span class="rr-tagline">Country-Based · Content Licensing</span>
+                        </div>
+                        <p class="rr-description">Routes based on <strong>where the user physically is</strong> (country, continent, or US state). NOT about speed — this is about <strong>showing different content based on location</strong>.</p>
+                        <div class="rr-visual">
+                            <div class="rr-flow-label">Different countries → Different servers</div>
+                            <div class="routing-visual">
+                                <div class="rv-split">
+                                    <div class="rv-target active">🇯🇵 Japan → jp.streamflix.com</div>
+                                    <div class="rv-target active">🇩🇪 Germany → eu.streamflix.com</div>
+                                    <div class="rv-target">🌎 Default → us.streamflix.com</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rr-details-grid">
+                            <div class="rr-detail">
+                                <h5>📋 How It Works</h5>
+                                <ol>
+                                    <li>Create records with location rules:
+                                        <br>• Country = Japan → Tokyo ALB
+                                        <br>• Continent = Europe → Ireland ALB
+                                        <br>• Default → Virginia ALB
+                                    </li>
+                                    <li>Route 53 detects user's country from DNS resolver IP</li>
+                                    <li>Matches the most specific rule first</li>
+                                </ol>
+                            </div>
+                            <div class="rr-detail">
+                                <h5>🏢 Real-World Example</h5>
+                                <p><strong>Netflix content licensing:</strong> "Squid Game" is available in Korea but not in the US. Geo-routing ensures Korean users see Korean content library, US users see US library.</p>
+                                <p><strong>GDPR compliance:</strong> EU users are routed to EU-based servers that comply with European data laws.</p>
+                            </div>
+                        </div>
+                        <div class="rr-config">
+                            <h5>⚙️ AWS Console Config</h5>
+                            <code>Record 1: A | Value: 13.112.x.x | Location: Asia - Japan | Set ID: "japan"</code><br>
+                            <code>Record 2: A | Value: 34.245.x.x | Location: Europe | Set ID: "europe"</code><br>
+                            <code>Record 3: A | Value: 54.230.x.x | Location: Default | Set ID: "default"</code>
+                        </div>
+                        <div class="rr-warning">⚠️ Always create a <strong>Default</strong> record! Without it, users from unlisted locations get NO response (NXDOMAIN error).</div>
+                        <div class="rr-compare">🔍 <strong>vs Latency:</strong> Geolocation = "You ARE in India → go to India server." Latency = "You GET fastest response from Singapore → go there." Geolocation is legal/content-driven, Latency is performance-driven.</div>
+                    </div>
+
+                    <div class="routing-card-rich" id="routeMultivalue">
+                        <div class="rr-header">
+                            <span class="rr-badge multivalue">Multivalue</span>
+                            <span class="rr-tagline">DNS Load Balancing · Health-Aware</span>
+                        </div>
+                        <p class="rr-description">Returns <strong>up to 8 healthy IP addresses</strong> in response to a DNS query. The client randomly picks one. Like Simple routing BUT with health checks, so dead servers are excluded.</p>
+                        <div class="rr-visual">
+                            <div class="rr-flow-label">Returns only healthy IPs</div>
+                            <div class="routing-visual">
+                                <div class="rv-user">User</div>
+                                <div class="rv-arrow">→</div>
+                                <div class="rv-split">
+                                    <div class="rv-target active">10.0.1.10 ✅</div>
+                                    <div class="rv-target active">10.0.2.20 ✅</div>
+                                    <div class="rv-target error">10.0.3.30 ❌</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rr-details-grid">
+                            <div class="rr-detail">
+                                <h5>📋 How It Works</h5>
+                                <ol>
+                                    <li>Create 8 A records, each with its own health check</li>
+                                    <li>Route 53 checks health of all 8</li>
+                                    <li>Returns only healthy ones (up to 8)</li>
+                                    <li>Client picks one randomly</li>
+                                </ol>
+                            </div>
+                            <div class="rr-detail">
+                                <h5>🏢 Real-World Example</h5>
+                                <p><strong>Small startup</strong> with 4 web servers and no budget for an ALB ($16/month). Use Multivalue to spread traffic and auto-remove bad servers from DNS.</p>
+                            </div>
+                        </div>
+                        <div class="rr-config">
+                            <h5>⚙️ AWS Console Config</h5>
+                            <code>Record 1: A | Value: 10.0.1.10 | Set ID: "web-1" | Health Check: hc-1</code><br>
+                            <code>Record 2: A | Value: 10.0.2.20 | Set ID: "web-2" | Health Check: hc-2</code><br>
+                            <code>Record 3: A | Value: 10.0.3.30 | Set ID: "web-3" | Health Check: hc-3</code>
+                        </div>
+                        <div class="rr-compare">🔍 <strong>vs Simple:</strong> Simple returns ALL IPs (including dead ones). Multivalue only returns <em>healthy</em> IPs. <strong>vs ALB:</strong> ALB is true load balancing (Layer 7, sticky sessions, path routing). Multivalue is basic DNS-level distribution.</div>
+                    </div>
+
+                    <div class="routing-card-rich" id="routeGeoproximity">
+                        <div class="rr-header">
+                            <span class="rr-badge geoproximity">Geoproximity</span>
+                            <span class="rr-tagline">Distance + Bias · Traffic Flow Required</span>
+                        </div>
+                        <p class="rr-description">Routes based on <strong>geographic distance</strong> between user and resource, with a configurable <strong>bias</strong> to expand or shrink a region's "catchment area." Available only in <strong>Route 53 Traffic Flow</strong> (visual editor).</p>
+                        <div class="rr-visual">
+                            <div class="rr-flow-label">Bias expands Mumbai's coverage area</div>
+                            <div class="routing-visual">
+                                <div class="rv-split">
+                                    <div class="rv-target active">Mumbai (bias: +25) <span class="rv-weight">← attracts more traffic</span></div>
+                                    <div class="rv-target dimmed">Virginia (bias: 0) <span class="rv-weight">← normal area</span></div>
+                                    <div class="rv-target dimmed">Ireland (bias: -10) <span class="rv-weight">← shrinks area</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rr-details-grid">
+                            <div class="rr-detail">
+                                <h5>📋 How It Works</h5>
+                                <ol>
+                                    <li>Open Route 53 → <strong>Traffic Flow</strong> → Create policy</li>
+                                    <li>Add resources with lat/long or AWS region</li>
+                                    <li>Adjust <strong>bias</strong> (−99 to +99)</li>
+                                    <li>Positive bias = larger area = more traffic</li>
+                                    <li>Negative bias = smaller area = less traffic</li>
+                                </ol>
+                            </div>
+                            <div class="rr-detail">
+                                <h5>🏢 Real-World Example</h5>
+                                <p><strong>Expanding into a new market:</strong> You launch Mumbai servers but want to gradually shift Middle East traffic from Ireland → Mumbai. Increase Mumbai bias from 0 → +25 → +50 over weeks.</p>
+                            </div>
+                        </div>
+                        <div class="rr-config">
+                            <h5>⚙️ AWS Console Config</h5>
+                            <code>This policy is ONLY available via Route 53 Traffic Flow (visual editor).</code><br>
+                            <code>Costs: $50/month per Traffic Flow policy.</code>
+                        </div>
+                        <div class="rr-compare">🔍 <strong>vs Geolocation:</strong> Geolocation = hard country boundaries. Geoproximity = flexible distance-based with adjustable bias. You can "steal" traffic from nearby regions.</div>
+                    </div>
+
+                    <div class="routing-card-rich" id="routeIPBased">
+                        <div class="rr-header">
+                            <span class="rr-badge ipbased">IP-Based</span>
+                            <span class="rr-tagline">CIDR Routing · ISP Optimization</span>
+                        </div>
+                        <p class="rr-description">Routes based on the <strong>client's IP address range</strong> (CIDR blocks). You define which IP ranges should go to which endpoints. Useful for ISP-specific or enterprise network optimization.</p>
+                        <div class="rr-visual">
+                            <div class="rr-flow-label">Different IP ranges → Different endpoints</div>
+                            <div class="routing-visual">
+                                <div class="rv-split">
+                                    <div class="rv-target active">203.0.113.0/24 → ISP-A endpoint</div>
+                                    <div class="rv-target active">198.51.100.0/24 → ISP-B endpoint</div>
+                                    <div class="rv-target">Default → General endpoint</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rr-details-grid">
+                            <div class="rr-detail">
+                                <h5>📋 How It Works</h5>
+                                <ol>
+                                    <li>Create a <strong>CIDR collection</strong> in Route 53</li>
+                                    <li>Add CIDR blocks (e.g., <code>203.0.113.0/24</code>)</li>
+                                    <li>Associate CIDR blocks with DNS records</li>
+                                    <li>Route 53 matches client IP → routes to matched record</li>
+                                </ol>
+                            </div>
+                            <div class="rr-detail">
+                                <h5>🏢 Real-World Example</h5>
+                                <p><strong>Telecom company:</strong> Jio users (specific IP ranges) are routed to Mumbai CDN, Airtel users to a different CDN. Optimizes peering and reduces inter-ISP transit costs.</p>
+                            </div>
+                        </div>
+                        <div class="rr-config">
+                            <h5>⚙️ AWS Console Config</h5>
+                            <code>Step 1: Create CIDR collection → Add CIDR locations</code><br>
+                            <code>Step 2: Create record → Routing: IP-based → Select CIDR location</code>
+                        </div>
+                        <div class="rr-tip">💡 Newest routing policy (added 2022). Rarely asked in interviews but very useful for ISPs and large enterprises.</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Interactive Demo: DNS Lookup Simulator -->
+            <div class="r53-simulator">
+                <h3 class="subsection-title">🧪 Interactive: DNS Lookup Simulator</h3>
+                <p class="section-subtitle">Select a record type and see how Route 53 resolves it</p>
+                <div class="demo-panel">
+                    <div class="dns-input-group">
+                        <select id="dnsRecordType" class="dns-select">
+                            <option value="a">A Record — IP → DNS</option>
+                            <option value="cname">CNAME — DNS → DNS</option>
+                            <option value="alias-cf">ALIAS → CloudFront</option>
+                            <option value="alias-alb">ALIAS → ALB</option>
+                            <option value="alias-s3">ALIAS → S3 Website</option>
+                            <option value="mx">MX — Mail Exchange</option>
+                            <option value="weighted">Weighted (70/30 Split)</option>
+                            <option value="failover">Failover (Primary Down)</option>
+                            <option value="latency">Latency-Based (Mumbai vs Virginia)</option>
+                            <option value="geolocation">Geolocation (India → Mumbai)</option>
+                        </select>
+                        <button id="dnsLookupBtn" class="btn btn-primary">
+                            <span class="btn-icon">🔍</span> Resolve DNS
+                        </button>
+                    </div>
+
+                    <div class="terminal" id="dnsTerminal">
+                        <div class="terminal-header">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                            <span class="terminal-title">DNS Resolution</span>
+                        </div>
+                        <div class="terminal-body" id="dnsTerminalBody">
+                            <p class="terminal-line dim">$ Select a record type and click "Resolve DNS"...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== ALB Section ===== -->
+    <section id="alb-section" class="section section-dark">
+        <div class="section-inner">
+            <h2 class="section-title">⚖️ Application Load Balancer</h2>
+            <p class="section-subtitle">Distributing traffic across multiple targets with health checks</p>
+
+            <div class="alb-architecture">
+                <div class="alb-flow">
+                    <div class="alb-node">
+                        <div class="alb-node-icon">🌐</div>
+                        <div class="alb-node-label">Users</div>
+                    </div>
+                    <div class="alb-connector">→</div>
+                    <div class="alb-node">
+                        <div class="alb-node-icon">📡</div>
+                        <div class="alb-node-label">Route 53<br><code>api.streamflix.com</code><br><small>ALIAS → ALB</small></div>
+                    </div>
+                    <div class="alb-connector">→</div>
+                    <div class="alb-node highlight">
+                        <div class="alb-node-icon">⚖️</div>
+                        <div class="alb-node-label">ALB<br><small>Listener :443 (HTTPS)</small><br><small>ACM cert attached</small></div>
+                    </div>
+                    <div class="alb-connector">→</div>
+                    <div class="alb-targets">
+                        <div class="alb-target-group">
+                            <div class="alb-tg-title">Target Group: /api/*</div>
+                            <div class="alb-target healthy">EC2-A ✅</div>
+                            <div class="alb-target healthy">EC2-B ✅</div>
+                            <div class="alb-target unhealthy">EC2-C ❌</div>
+                        </div>
+                        <div class="alb-target-group">
+                            <div class="alb-tg-title">Target Group: /static/*</div>
+                            <div class="alb-target healthy">Lambda ✅</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alb-features-grid">
+                <div class="alb-feature">
+                    <h4>🔀 Path-Based Routing</h4>
+                    <p><code>/api/*</code> → EC2 instances<br><code>/static/*</code> → Lambda function<br><code>/*</code> → Default target group</p>
+                </div>
+                <div class="alb-feature">
+                    <h4>🏥 Health Checks</h4>
+                    <p>ALB pings <code>/health</code> every 30s.<br>If 3 consecutive failures → target = <strong>unhealthy</strong> → traffic diverted</p>
+                </div>
+                <div class="alb-feature">
+                    <h4>📡 DNS Mapping</h4>
+                    <p>ALB provides a DNS name: <code>my-alb-1234.us-east-1.elb.amazonaws.com</code><br>Route 53 ALIAS record maps <code>api.streamflix.com</code> → ALB DNS</p>
+                </div>
+                <div class="alb-feature">
+                    <h4>🔒 SSL Termination</h4>
+                    <p>ACM certificate attached to ALB listener on port 443. Backend targets can run on HTTP (port 80), reducing compute overhead.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Footer ===== -->
+    <footer id="footer">
+        <div class="footer-inner">
+            <p>Built for <strong>AWS Cloud Training</strong> — S3 · CloudFront · WAF · Route53 · ACM · ALB · API Gateway · Lambda</p>
+            <p class="footer-sub">StreamFlix Demo App &copy; 2026 — Not affiliated with any streaming service</p>
+            <p class="footer-sub" id="ec2FooterInfo" style="display:none;"></p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

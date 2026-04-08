@@ -1,0 +1,6 @@
+# Copy this file to terraform.tfvars and fill in your values
+# Usage: terraform apply
+
+domain_name      = "REPLACE_WITH_YOUR_DOMAIN.com"
+subdomain_prefix = "streamflix"
+aws_region       = "us-east-1"
